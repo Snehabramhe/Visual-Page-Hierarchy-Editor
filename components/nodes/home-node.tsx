@@ -79,7 +79,7 @@ export const HomeNode = memo(function HomeNode({ id, data }: NodeProps<{ data: H
 
       <div className={`mb-2 text-xs ${colors.text} opacity-70`}>Level {level} • Drag to reorder sections</div>
 
-      <div className="space-y-2">
+      <div className="nodrag nowheel space-y-2">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={sections} strategy={verticalListSortingStrategy}>
             {sections.map((section) => (
