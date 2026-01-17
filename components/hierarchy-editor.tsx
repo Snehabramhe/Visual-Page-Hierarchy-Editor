@@ -29,7 +29,6 @@ const nodeTypes = {
 export function HierarchyEditor() {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
-  const [homeSections, setHomeSections] = useState<string[]>([])
   const [showJsonPanel, setShowJsonPanel] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
 
@@ -40,42 +39,28 @@ export function HierarchyEditor() {
     const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(initialNodes, initialEdges)
     setNodes(layoutedNodes)
     setEdges(layoutedEdges)
-    setHomeSections(state.homeSections)
     setIsInitialized(true)
   }, [setNodes, setEdges])
 
-  // Update home node when sections change
-  const updateHomeSections = useCallback(
-    (newSections: string[]) => {
-      setHomeSections(newSections)
-      setNodes((nds) =>
-        nds.map((node) => {
-          if (node.id === "home") {
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                sections: newSections,
-              },
-            }
-          }
-          return node
-        }),
-      )
-    },
-    [setNodes],
-  )
+  const getCurrentHomeSections = useCallback((): string[] => {
+    const homeNode = nodes.find((node) => node.id === "home")
+    if (homeNode && homeNode.data && Array.isArray((homeNode.data as { sections?: string[] }).sections)) {
+      return (homeNode.data as { sections: string[] }).sections
+    }
+    return getInitialState().homeSections
+  }, [nodes])
 
   const handleSave = useCallback(() => {
+    const currentSections = getCurrentHomeSections()
     const state: HierarchyState = {
       pages: getInitialState().pages,
-      homeSections,
+      homeSections: currentSections,
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
     toast.success("Hierarchy Saved!", {
       description: "Your page hierarchy has been saved to localStorage.",
     })
-  }, [homeSections])
+  }, [getCurrentHomeSections])
 
   const handleLoad = useCallback(() => {
     const saved = localStorage.getItem(STORAGE_KEY)
@@ -86,7 +71,6 @@ export function HierarchyEditor() {
         const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(loadedNodes, loadedEdges)
         setNodes(layoutedNodes)
         setEdges(layoutedEdges)
-        setHomeSections(state.homeSections)
         toast.success("Hierarchy Loaded!", {
           description: "Your saved hierarchy has been restored.",
         })
@@ -103,9 +87,10 @@ export function HierarchyEditor() {
   }, [setNodes, setEdges])
 
   const handleExport = useCallback(() => {
+    const currentSections = getCurrentHomeSections()
     const state: HierarchyState = {
       pages: getInitialState().pages,
-      homeSections,
+      homeSections: currentSections,
     }
     const json = JSON.stringify(state, null, 2)
     const blob = new Blob([json], { type: "application/json" })
@@ -120,7 +105,7 @@ export function HierarchyEditor() {
     toast.success("JSON Exported!", {
       description: "Your hierarchy has been downloaded as page-hierarchy.json",
     })
-  }, [homeSections])
+  }, [getCurrentHomeSections])
 
   // Toggle JSON panel
   const handleToggleJsonPanel = useCallback(() => {
@@ -130,9 +115,9 @@ export function HierarchyEditor() {
   const getCurrentState = useCallback((): HierarchyState => {
     return {
       pages: getInitialState().pages,
-      homeSections,
+      homeSections: getCurrentHomeSections(),
     }
-  }, [homeSections])
+  }, [getCurrentHomeSections])
 
   if (!isInitialized) {
     return (
