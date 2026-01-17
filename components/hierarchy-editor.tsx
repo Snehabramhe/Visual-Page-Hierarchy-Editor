@@ -19,8 +19,7 @@ import { ControlPanel } from "./control-panel"
 import { JsonPanel } from "./json-panel"
 import { getInitialState, createNodesAndEdges, STORAGE_KEY, type HierarchyState } from "@/lib/hierarchy-data"
 import { getLayoutedElements } from "@/lib/dagre-layout"
-import { Toaster } from "@/components/ui/toaster"
-import { useToast } from "@/hooks/use-toast"
+import { toast, Toaster } from "sonner"
 
 const nodeTypes = {
   pageNode: PageNode,
@@ -33,7 +32,6 @@ export function HierarchyEditor() {
   const [homeSections, setHomeSections] = useState<string[]>([])
   const [showJsonPanel, setShowJsonPanel] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
-  const { toast } = useToast()
 
   // Initialize with default state
   useEffect(() => {
@@ -68,20 +66,17 @@ export function HierarchyEditor() {
     [setNodes],
   )
 
-  // Save to localStorage
   const handleSave = useCallback(() => {
     const state: HierarchyState = {
       pages: getInitialState().pages,
       homeSections,
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-    toast({
-      title: "Saved!",
-      description: "Your hierarchy has been saved to localStorage.",
+    toast.success("Hierarchy Saved!", {
+      description: "Your page hierarchy has been saved to localStorage.",
     })
-  }, [homeSections, toast])
+  }, [homeSections])
 
-  // Load from localStorage
   const handleLoad = useCallback(() => {
     const saved = localStorage.getItem(STORAGE_KEY)
     if (saved) {
@@ -92,27 +87,21 @@ export function HierarchyEditor() {
         setNodes(layoutedNodes)
         setEdges(layoutedEdges)
         setHomeSections(state.homeSections)
-        toast({
-          title: "Loaded!",
-          description: "Your hierarchy has been loaded from localStorage.",
+        toast.success("Hierarchy Loaded!", {
+          description: "Your saved hierarchy has been restored.",
         })
       } catch {
-        toast({
-          title: "Error",
-          description: "Failed to load saved data.",
-          variant: "destructive",
+        toast.error("Load Failed", {
+          description: "Failed to parse saved data. It may be corrupted.",
         })
       }
     } else {
-      toast({
-        title: "No Data",
-        description: "No saved hierarchy found in localStorage.",
-        variant: "destructive",
+      toast.warning("No Saved Data", {
+        description: "No hierarchy found in localStorage. Save one first!",
       })
     }
-  }, [setNodes, setEdges, toast])
+  }, [setNodes, setEdges])
 
-  // Export as JSON
   const handleExport = useCallback(() => {
     const state: HierarchyState = {
       pages: getInitialState().pages,
@@ -128,11 +117,10 @@ export function HierarchyEditor() {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
-    toast({
-      title: "Exported!",
-      description: "Your hierarchy has been downloaded as JSON.",
+    toast.success("JSON Exported!", {
+      description: "Your hierarchy has been downloaded as page-hierarchy.json",
     })
-  }, [homeSections, toast])
+  }, [homeSections])
 
   // Toggle JSON panel
   const handleToggleJsonPanel = useCallback(() => {
@@ -229,7 +217,7 @@ export function HierarchyEditor() {
         </div>
       </footer>
 
-      <Toaster />
+      <Toaster position="top-right" richColors />
     </div>
   )
 }
